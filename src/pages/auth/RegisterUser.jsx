@@ -114,6 +114,7 @@ const InputField = ({
   onBlur,
   placeholder = "",
   required = false,
+  disabled = false,
   error = null,
 }) => {
   const inputRef = useRef(null);
@@ -133,6 +134,7 @@ const InputField = ({
           id={name}
           name={name}
           placeholder={placeholder}
+          disabled={disabled}
           autoComplete={name}
           value={value}
           onChange={onChange}
@@ -173,10 +175,15 @@ const RegisterUser = () => {
     confirmPassword: "",
     phone: "",
     aadharNumber: "",
-    address: "",
-    city: "",
-    state: "",
-    zipCode: "",
+    address: {
+      line1: "",
+      line2: "",
+      landmark: "",
+      city: "",
+      district: "",
+      state: "",
+      zipCode: "",
+    },
     emergencyContact: "",
     emergencyPhone: "",
   });
@@ -184,7 +191,7 @@ const RegisterUser = () => {
   const [touched, setTouched] = useState({});
   const [loading, setLoading] = useState(false);
   const [validatingZip, setValidatingZip] = useState(false);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(2);
   const navigate = useNavigate();
 
   // Password strength indicators
@@ -238,7 +245,17 @@ const RegisterUser = () => {
       const data = await response.json();
 
       if (data[0].Status === "Success" && data[0].PostOffice?.length) {
-        return ""; // Pincode exists
+        const postOffice = data[0].PostOffice[0];
+        setFormData((prevData) => ({
+          ...prevData,
+          address: {
+            ...prevData.address,
+            city: postOffice.Name,
+            district: postOffice.District,
+            state: postOffice.State,
+          },
+        }));
+        return "";
       } else {
         return "Invalid PIN code";
       }
@@ -294,17 +311,19 @@ const RegisterUser = () => {
         return "";
       case "aadharNumber":
         if (!value) return "Aadhaar number is required";
-        // Strip dashes and validate digit count
+
         const rawAadhaar = value.replace(/-/g, "");
         if (!/^\d{12}$/.test(rawAadhaar)) return "Aadhaar must be 12 digits";
         return "";
-      case "address":
-        return !value ? "Address is required" : "";
-      case "city":
+      case "address.line1":
+        return !value ? "Line 1 is required" : "";
+      case "address.city":
         return !value ? "City is required" : "";
-      case "state":
+      case "address.district":
+        return !value ? "District is required" : "";
+      case "address.state":
         return !value ? "State is required" : "";
-      case "zipCode":
+      case "address.zipCode":
         if (!value) return "ZIP Code is required";
         if (!/^\d{6}$/.test(value)) return "ZIP Code must be exactly 6 digits";
         return "";
@@ -340,10 +359,17 @@ const RegisterUser = () => {
   // Validate all fields for step 2
   const validateStep2 = () => {
     const newErrors = {};
-    const fields = ["address", "city", "state", "zipCode"];
+    const fields = [
+      "address.line1",
+      "address.city",
+      "address.district",
+      "address.state",
+      "address.zipCode",
+    ];
 
     fields.forEach((field) => {
-      const error = validateField(field, formData[field]);
+      const subField = field.split(".")[1];
+      const error = validateField(field, formData["address"][subField]);
       if (error) newErrors[field] = error;
 
       // Mark fields as touched
@@ -365,7 +391,15 @@ const RegisterUser = () => {
         formattedValue = formatAadhaar(value);
       }
 
-      setFormData((prevData) => ({ ...prevData, [name]: formattedValue }));
+      if (name.startsWith("address.")) {
+        const field = name.split(".")[1];
+        setFormData((prevData) => ({
+          ...prevData,
+          address: { ...prevData.address, [field]: formattedValue },
+        }));
+      } else {
+        setFormData((prevData) => ({ ...prevData, [name]: formattedValue }));
+      }
 
       // Only validate if the field has been touched
       if (touched[name]) {
@@ -395,24 +429,25 @@ const RegisterUser = () => {
       const error = validateField(name, value);
       setErrors((prev) => ({ ...prev, [name]: error }));
 
-      if (name === "zipCode" && !error) {
+      if (name === "address.zipCode" && !error) {
         const zipError = await validatePincodeExistence(value);
-        setErrors((prev) => ({ ...prev, zipCode: zipError }));
+        setErrors((prev) => ({ ...prev, "address.zipCode": zipError }));
       }
     },
     [formData, passwordChecks]
   );
 
+  const formTopRef = useRef(null);
   const nextStep = () => {
     if (step === 1 && validateStep1()) {
       setStep(2);
-      window.scrollTo(0, 770);
+      formTopRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   };
 
   const prevStep = () => {
     setStep(1);
-    window.scrollTo(0, 770);
+    formTopRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSubmit = async (e) => {
@@ -483,7 +518,10 @@ const RegisterUser = () => {
   );
 
   return (
-    <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+    <div
+      ref={formTopRef}
+      className="bg-white shadow-lg rounded-xl overflow-hidden"
+    >
       {/* Form Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4">
         <h2 className="text-xl md:text-2xl font-bold text-white">
@@ -646,6 +684,34 @@ const RegisterUser = () => {
                     error={touched.password ? errors.password : null}
                   />
 
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <h4 className="text-sm font-medium text-blue-800 mb-2">
+                      Password Requirements:
+                    </h4>
+                    <ul className="text-xs space-y-2">
+                      <PasswordRequirement
+                        fulfilled={passwordChecks.length}
+                        text="At least 6 characters long"
+                      />
+                      <PasswordRequirement
+                        fulfilled={passwordChecks.uppercase}
+                        text="At least one uppercase letter (A-Z)"
+                      />
+                      <PasswordRequirement
+                        fulfilled={passwordChecks.lowercase}
+                        text="At least one lowercase letter (a-z)"
+                      />
+                      <PasswordRequirement
+                        fulfilled={passwordChecks.number}
+                        text="At least one number (0-9)"
+                      />
+                      <PasswordRequirement
+                        fulfilled={passwordChecks.special}
+                        text="At least one special character (!@#$%^&*)"
+                      />
+                    </ul>
+                  </div>
+
                   <PasswordField
                     label="Confirm Password"
                     name="confirmPassword"
@@ -659,35 +725,6 @@ const RegisterUser = () => {
                     }
                   />
                 </div>
-              </div>
-
-              {/* Dynamic Password requirements indicator */}
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                <h4 className="text-sm font-medium text-blue-800 mb-2">
-                  Password Requirements:
-                </h4>
-                <ul className="text-xs space-y-2">
-                  <PasswordRequirement
-                    fulfilled={passwordChecks.length}
-                    text="At least 6 characters long"
-                  />
-                  <PasswordRequirement
-                    fulfilled={passwordChecks.uppercase}
-                    text="At least one uppercase letter (A-Z)"
-                  />
-                  <PasswordRequirement
-                    fulfilled={passwordChecks.lowercase}
-                    text="At least one lowercase letter (a-z)"
-                  />
-                  <PasswordRequirement
-                    fulfilled={passwordChecks.number}
-                    text="At least one number (0-9)"
-                  />
-                  <PasswordRequirement
-                    fulfilled={passwordChecks.special}
-                    text="At least one special character (!@#$%^&*)"
-                  />
-                </ul>
               </div>
 
               <div className="flex justify-end mt-8">
@@ -728,75 +765,125 @@ const RegisterUser = () => {
               </div>
 
               <InputField
-                label="Address"
-                name="address"
-                value={formData.address}
+                label="Line 1"
+                name="address.line1"
+                value={formData.address.line1}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                placeholder="Enter your street address"
+                placeholder="Enter your address line1"
                 required
-                error={touched.address ? errors.address : null}
+                error={
+                  touched["address.line1"] ? errors["address.line1"] : null
+                }
+              />
+              <InputField
+                label="Line 2"
+                name="address.line2"
+                value={formData.address.line2}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                placeholder="Enter your address line2"
+                error={
+                  touched["address.line2"] ? errors["address.line2"] : null
+                }
               />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <InputField
+                  label="Landmark"
+                  name="address.landmark"
+                  value={formData.address.landmark}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder="Enter a landmark"
+                  error={
+                    touched["address.landmark"]
+                      ? errors["address.landmark"]
+                      : null
+                  }
+                />
+
+                <InputField
                   label="City"
-                  name="city"
-                  value={formData.city}
+                  name="address.city"
+                  value={formData.address.city}
                   onChange={handleChange}
                   onBlur={handleBlur}
                   placeholder="Your city"
                   required
-                  error={touched.city ? errors.city : null}
+                  error={
+                    touched["address.city"] ? errors["address.city"] : null
+                  }
+                />
+
+                <div className="relative">
+                  <InputField
+                    label="ZIP/Postal Code"
+                    name="address.zipCode"
+                    value={formData.address.pinCode}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder="ZIP code"
+                    required
+                    error={
+                      touched["address.zipCode"]
+                        ? errors["address.zipCode"]
+                        : null
+                    }
+                  />
+                  {validatingZip && (
+                    <div className="absolute right-3 top-9">
+                      <svg
+                        className="animate-spin h-5 w-5 text-blue-600"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                        ></path>
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
+                <InputField
+                  label="District"
+                  name="address.district"
+                  value={formData.address.district}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder="Your District"
+                  required
+                  disabled
+                  error={
+                    touched["address.district"]
+                      ? errors["address.district"]
+                      : null
+                  }
                 />
 
                 <InputField
                   label="State/Province"
-                  name="state"
-                  value={formData.state}
+                  name="address.state"
+                  value={formData.address.state}
                   onChange={handleChange}
                   onBlur={handleBlur}
                   placeholder="Your state"
                   required
-                  error={touched.state ? errors.state : null}
+                  disabled
+                  error={touched["address.state"] ? errors["address.state"] : null}
                 />
-                
-                <div className="relative">
-                <InputField
-                  label="ZIP/Postal Code"
-                  name="zipCode"
-                  value={formData.zipCode}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  placeholder="ZIP code"
-                  required
-                  error={touched.zipCode ? errors.zipCode : null}
-                />
-                {validatingZip && (
-                  <div className="absolute right-3 top-9">
-                    <svg
-                      className="animate-spin h-5 w-5 text-blue-600"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                      ></path>
-                    </svg>
-                    </div>
-                )}
-                </div>
               </div>
 
               <div className="mt-8 mb-4">

@@ -2,17 +2,18 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PageContainer from '../../components/layout/PageContainer';
 import RegisterUser from './RegisterUser';
+import RegisterVolunteer from './RegisterVolunteer';
 
 const Register = () => {
   const [selectedRole, setSelectedRole] = useState('user');
 
-  const RegisterVolunteer = () => (
-    <div className="w-full bg-white p-6 md:p-8 rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Register as Volunteer</h1>
-      {/* Volunteer registration form would go here */}
-      <div className="text-center text-gray-500 mt-4">Volunteer registration form coming soon</div>
-    </div>
-  );
+  // const RegisterVolunteer = () => (
+  //   <div className="w-full bg-white p-6 md:p-8 rounded-lg shadow-md">
+  //     <h1 className="text-2xl font-bold text-gray-800 mb-6">Register as Volunteer</h1>
+  //     {/* Volunteer registration form would go here */}
+  //     <div className="text-center text-gray-500 mt-4">Volunteer registration form coming soon</div>
+  //   </div>
+  // );
   
   const RegisterNGO = () => (
     <div className="w-full bg-white p-6 md:p-8 rounded-lg shadow-md">
