@@ -209,6 +209,8 @@ const RegisterNGO = () => {
       state: "",
       zipCode: "",
     },
+    emergencyResources: [],
+
   });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -253,10 +255,7 @@ const RegisterNGO = () => {
     // Remove all non-digit characters
     const digits = value.replace(/\D/g, "").substring(0, 12);
 
-    // Format as XXXX-XXXX-XXXX
-    return digits.replace(/(\d{4})(\d{4})(\d{0,4})/, (_, p1, p2, p3) =>
-      [p1, p2, p3].filter(Boolean).join("-")
-    );
+    return digits;
   };
 
   const validatePincodeExistence = async (pincode) => {
@@ -303,15 +302,22 @@ const RegisterNGO = () => {
       case "websiteUrl":
         if (!value) return "Website URL is required";
         if (
-          !/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(value)
+          !/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(
+            value
+          )
         )
           return "Invalid website URL format";
         return "";
+
       case "registrationNumber":
         if (!value) return "Registration Number is required";
-        if (!/^[0-9]{12}$/.test(value))
+
+        if (!/^\d{12}$/.test(value)) {
           return "Registration Number must be 12 digits";
+        }
+
         return "";
+
       case "password":
         if (!value) return "Password is required";
 
@@ -339,7 +345,7 @@ const RegisterNGO = () => {
         if (!/^[6-9]\d{9}$/.test(cleanedPhone)) {
           return "Enter a valid 10-digit Indian mobile number";
         }
-        return "";
+
       case "address.line1":
         return !value ? "Line 1 is required" : "";
       case "address.city":
@@ -406,6 +412,19 @@ const RegisterNGO = () => {
     setErrors((prev) => ({ ...prev, ...newErrors }));
     return Object.keys(newErrors).length === 0;
   };
+  
+  const handleCheckboxChange = (e) => {
+    console.log("Resource Selected : ", formData.emergencyResources);
+    const { value, checked } = e.target;
+    let updated = [...formData.emergencyResources || []];
+    if (checked) {
+      updated.push(value);
+    } else {
+      updated = updated.filter((item) => item !== value);
+    }
+    setFormData({ ...formData, emergencyResources: updated });
+  };
+
 
   // Handle field change with validation
   const handleChange = useCallback(
@@ -992,33 +1011,50 @@ const RegisterNGO = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InputField
-                    label="Emergency Contact Name"
-                    name="emergencyContact"
-                    value={formData.emergencyContact}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="Contact person's name"
-                    error={
-                      touched.emergencyContact ? errors.emergencyContact : null
-                    }
-                  />
 
-                  <InputField
-                    label="Emergency Contact Phone"
-                    name="emergencyPhone"
-                    type="tel"
-                    value={formData.emergencyPhone}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="Contact person's phone"
-                    error={
-                      touched.emergencyPhone ? errors.emergencyPhone : null
-                    }
-                  />
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="col-span-1 md:col-span-2 ">
+                    <label className="block text-12  font-medium text-gray-700 mb-2">
+                    Relief Resources:
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 pl-5 pr-5 pt-2 pb-1 gap-2 font-medium">
+                      {[
+                        "Food Distribution",
+                        "Clean Drinking Water",
+                        "Medical Aid",
+                        "Temporary Shelter",
+                        "Emergency Medicine",
+                        "Psychological Support",
+                        "Rescue Operations",
+                        "Hygiene Kits",
+                        "Emergency Transport",
+                        "Child & Women Safety",
+                      ].map((resource) => (
+                        <label
+                          key={resource}
+                          className="flex items-center space-x-2 bg-gray-50 p-2 rounded-md shadow-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            name="emergencyResources"
+                            value={resource}
+                            checked={formData.emergencyResources?.includes(
+                              resource
+                            )}
+                            onChange={handleCheckboxChange}
+                            className="text-blue-600"
+                          />
+                          <span className="text-sm text-gray-700">
+                            {resource}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>{" "}
+                {/* ✅ This closing div was missing in your original code */}
               </div>
+
 
               <div className="flex flex-col sm:flex-row justify-between mt-8">
                 <button
