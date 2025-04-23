@@ -186,12 +186,24 @@ const RegisterUser = () => {
     },
     emergencyContact: "",
     emergencyPhone: "",
+    medical: {
+      dob: "",
+      gender: "",
+      height: "",
+      weight: "",
+      bloodGroup: "",
+      allergies: "",
+      medicalConditions: "",
+      medications: "",
+      surgeries: "",
+      pregnancyStatus: "",
+    },
   });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [loading, setLoading] = useState(false);
   const [validatingZip, setValidatingZip] = useState(false);
-  const [step, setStep] = useState(2);
+  const [step, setStep] = useState(3);
   const navigate = useNavigate();
 
   // Password strength indicators
@@ -250,7 +262,6 @@ const RegisterUser = () => {
           ...prevData,
           address: {
             ...prevData.address,
-            city: postOffice.Name,
             district: postOffice.District,
             state: postOffice.State,
           },
@@ -327,6 +338,36 @@ const RegisterUser = () => {
         if (!value) return "ZIP Code is required";
         if (!/^\d{6}$/.test(value)) return "ZIP Code must be exactly 6 digits";
         return "";
+      // medical info validation
+      case "medical.dob":
+        return !value ? "Date of birth is required" : "";
+      case "medical.gender":
+        return !value ? "Gender is required" : "";
+      case "medical.height":
+        if (!value) return "Height is required";
+        if (isNaN(value) || value <= 0) return "Please enter a valid height";
+        return "";
+      case "medical.weight":
+        if (!value) return "Weight is required";
+        if (isNaN(value) || value <= 0) return "Please enter a valid weight";
+        return "";
+      case "medical.bloodGroup":
+        return !value ? "Blood group is required" : "";
+      case "medical.allergies":
+        return !value ? "Please list your allergies or enter 'None'" : "";
+      case "medical.medicalConditions":
+        return !value
+          ? "Please list your medical conditions or enter 'None'"
+          : "";
+      case "medical.medications":
+        return !value ? "Please list your medications or enter 'None'" : "";
+      case "medical.surgeries":
+        return !value ? "Please list your surgeries or enter 'None'" : "";
+      case "medical.pregnancyStatus":
+        if (formData.medical?.gender === "female" && !value) {
+          return "Pregnancy status is required for female users";
+        }
+        return "";
       default:
         return "";
     }
@@ -380,6 +421,42 @@ const RegisterUser = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Validate all fields for step 3
+  const validateStep3 = () => {
+    const newErrors = {};
+    const fields = [
+      "medical.dob",
+      "medical.gender",
+      "medical.height",
+      "medical.weight",
+      "medical.bloodGroup",
+      "medical.allergies",
+      "medical.medicalConditions",
+      "medical.medications",
+      "medical.surgeries",
+    ];
+
+    // Add pregnancy status validation only for females
+    if (formData.medical?.gender === "female") {
+      fields.push("medical.pregnancyStatus");
+    }
+
+    fields.forEach((field) => {
+      const value = field.startsWith("medical.")
+        ? formData.medical[field.split(".")[1]]
+        : formData[field];
+
+      const error = validateField(field, value);
+      if (error) newErrors[field] = error;
+
+      // Mark fields as touched
+      setTouched((prev) => ({ ...prev, [field]: true }));
+    });
+
+    setErrors((prev) => ({ ...prev, ...newErrors }));
+    return Object.keys(newErrors).length === 0;
+  };
+
   // Handle field change with validation
   const handleChange = useCallback(
     (e) => {
@@ -391,7 +468,13 @@ const RegisterUser = () => {
         formattedValue = formatAadhaar(value);
       }
 
-      if (name.startsWith("address.")) {
+      if (name.startsWith("medical.")) {
+        const field = name.split(".")[1];
+        setFormData((prevData) => ({
+          ...prevData,
+          medical: { ...prevData.medical, [field]: formattedValue },
+        }));
+      } else if (name.startsWith("address.")) {
         const field = name.split(".")[1];
         setFormData((prevData) => ({
           ...prevData,
@@ -442,18 +525,21 @@ const RegisterUser = () => {
     if (step === 1 && validateStep1()) {
       setStep(2);
       formTopRef.current?.scrollIntoView({ behavior: "smooth" });
+    } else if (step === 2 && validateStep2()) {
+      setStep(3);
+      formTopRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   };
 
   const prevStep = () => {
-    setStep(1);
+    setStep(step - 1);
     formTopRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (step === 2 && validateStep2()) {
+    if (step === 3 && validateStep3()) {
       setLoading(true);
 
       try {
@@ -543,7 +629,16 @@ const RegisterUser = () => {
               {/* Active progress */}
               <div
                 className="absolute top-1 h-2 transition-all duration-500 ease-in-out bg-blue-600 rounded-full"
-                style={{ width: step === 1 ? "50%" : "100%" }}
+                style={{
+                  width:
+                    step === 1
+                      ? "33.3%"
+                      : step === 2
+                      ? "66.6%"
+                      : step === 3
+                      ? "100%"
+                      : "0%",
+                }}
               ></div>
 
               {/* Step indicators */}
@@ -575,6 +670,21 @@ const RegisterUser = () => {
                   </div>
                   <span className="mt-3 text-xs md:text-sm font-medium text-gray-700">
                     Address & Emergency
+                  </span>
+                </div>
+
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors duration-300 text-sm font-medium ${
+                      step >= 3
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-200 text-gray-600"
+                    }`}
+                  >
+                    3
+                  </div>
+                  <span className="mt-3 text-xs md:text-sm font-medium text-gray-700">
+                    Medical Info
                   </span>
                 </div>
               </div>
@@ -882,7 +992,9 @@ const RegisterUser = () => {
                   placeholder="Your state"
                   required
                   disabled
-                  error={touched["address.state"] ? errors["address.state"] : null}
+                  error={
+                    touched["address.state"] ? errors["address.state"] : null
+                  }
                 />
               </div>
 
@@ -941,6 +1053,350 @@ const RegisterUser = () => {
                     }
                   />
                 </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-between mt-8">
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  className="mb-3 sm:mb-0 px-6 py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center justify-center"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                  Back
+                </button>
+
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition-colors duration-200 flex items-center"
+                >
+                  Next Step
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 ml-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="animated fadeIn">
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Medical Information
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  This information helps emergency responders provide
+                  appropriate care during disasters
+                </p>
+              </div>
+
+              <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg mb-6">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 text-blue-500"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-blue-700">
+                      Your medical information is kept strictly confidential and
+                      will only be accessed by authorized medical personnel
+                      during emergencies.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Basic Medical Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <InputField
+                    label="Date of Birth"
+                    name="medical.dob"
+                    type="date"
+                    value={formData.medical?.dob || ""}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    required
+                    error={
+                      touched["medical.dob"] ? errors["medical.dob"] : null
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gender <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-1">
+                    <select
+                      name="medical.gender"
+                      value={formData.medical?.gender || ""}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className={`block w-full px-4 py-3 rounded-lg border ${
+                        touched["medical.gender"] && errors["medical.gender"]
+                          ? "border-red-300 bg-red-50"
+                          : "border-gray-300 focus:border-blue-500"
+                      } focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors duration-200`}
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                    {touched["medical.gender"] && errors["medical.gender"] && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors["medical.gender"]}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                  <InputField
+                    label="Height (cm)"
+                    name="medical.height"
+                    type="number"
+                    value={formData.medical?.height || ""}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder="Height in centimeters"
+                    required
+                    error={
+                      touched["medical.height"]
+                        ? errors["medical.height"]
+                        : null
+                    }
+                  />
+                </div>
+
+                <div>
+                  <InputField
+                    label="Weight (kg)"
+                    name="medical.weight"
+                    type="number"
+                    value={formData.medical?.weight || ""}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder="Weight in kilograms"
+                    required
+                    error={
+                      touched["medical.weight"]
+                        ? errors["medical.weight"]
+                        : null
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Blood Group <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-1">
+                    <select
+                      name="medical.bloodGroup"
+                      value={formData.medical?.bloodGroup || ""}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className={`block w-full px-4 py-3 rounded-lg border ${
+                        touched["medical.bloodGroup"] &&
+                        errors["medical.bloodGroup"]
+                          ? "border-red-300 bg-red-50"
+                          : "border-gray-300 focus:border-blue-500"
+                      } focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors duration-200`}
+                    >
+                      <option value="">Select Blood Group</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                    </select>
+                    {touched["medical.bloodGroup"] &&
+                      errors["medical.bloodGroup"] && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {errors["medical.bloodGroup"]}
+                        </p>
+                      )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Pregnancy Status (only for females) */}
+              {formData.medical?.gender === "female" && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Pregnancy Status <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-1">
+                    <select
+                      name="medical.pregnancyStatus"
+                      value={formData.medical?.pregnancyStatus || ""}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className={`block w-full px-4 py-3 rounded-lg border ${
+                        touched["medical.pregnancyStatus"] &&
+                        errors["medical.pregnancyStatus"]
+                          ? "border-red-300 bg-red-50"
+                          : "border-gray-300 focus:border-blue-500"
+                      } focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors duration-200`}
+                    >
+                      <option value="">Select Status</option>
+                      <option value="pregnant">Pregnant</option>
+                      <option value="not pregnant">Not Pregnant</option>
+                    </select>
+                    {touched["medical.pregnancyStatus"] &&
+                      errors["medical.pregnancyStatus"] && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {errors["medical.pregnancyStatus"]}
+                        </p>
+                      )}
+                  </div>
+                </div>
+              )}
+
+              {/* Allergies & Conditions */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Allergies <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="medical.allergies"
+                  placeholder="List any allergies you have (medications, food, etc.) or write 'None' if you have no allergies"
+                  value={formData.medical?.allergies || ""}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  rows="3"
+                  className={`block w-full px-4 py-3 rounded-lg border ${
+                    touched["medical.allergies"] && errors["medical.allergies"]
+                      ? "border-red-300 bg-red-50"
+                      : "border-gray-300 focus:border-blue-500"
+                  } focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors duration-200`}
+                ></textarea>
+                {touched["medical.allergies"] &&
+                  errors["medical.allergies"] && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors["medical.allergies"]}
+                    </p>
+                  )}
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Medical Conditions <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="medical.medicalConditions"
+                  placeholder="List any chronic medical conditions (e.g., diabetes, hypertension, asthma) or write 'None' if you have no conditions"
+                  value={formData.medical?.medicalConditions || ""}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  rows="3"
+                  className={`block w-full px-4 py-3 rounded-lg border ${
+                    touched["medical.medicalConditions"] &&
+                    errors["medical.medicalConditions"]
+                      ? "border-red-300 bg-red-50"
+                      : "border-gray-300 focus:border-blue-500"
+                  } focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors duration-200`}
+                ></textarea>
+                {touched["medical.medicalConditions"] &&
+                  errors["medical.medicalConditions"] && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors["medical.medicalConditions"]}
+                    </p>
+                  )}
+              </div>
+
+              {/* Medications & Surgeries */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Current Medications <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="medical.medications"
+                  placeholder="List any medications you take regularly or write 'None' if you don't take any medications"
+                  value={formData.medical?.medications || ""}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  rows="3"
+                  className={`block w-full px-4 py-3 rounded-lg border ${
+                    touched["medical.medications"] &&
+                    errors["medical.medications"]
+                      ? "border-red-300 bg-red-50"
+                      : "border-gray-300 focus:border-blue-500"
+                  } focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors duration-200`}
+                ></textarea>
+                {touched["medical.medications"] &&
+                  errors["medical.medications"] && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors["medical.medications"]}
+                    </p>
+                  )}
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Previous Surgeries <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="medical.surgeries"
+                  placeholder="List any major surgeries you've had with dates or write 'None' if you haven't had any surgeries"
+                  value={formData.medical?.surgeries || ""}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  rows="3"
+                  className={`block w-full px-4 py-3 rounded-lg border ${
+                    touched["medical.surgeries"] && errors["medical.surgeries"]
+                      ? "border-red-300 bg-red-50"
+                      : "border-gray-300 focus:border-blue-500"
+                  } focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors duration-200`}
+                ></textarea>
+                {touched["medical.surgeries"] &&
+                  errors["medical.surgeries"] && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors["medical.surgeries"]}
+                    </p>
+                  )}
               </div>
 
               <div className="flex flex-col sm:flex-row justify-between mt-8">

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import incidentService from "../../services/incidentService";
-import PageContainer from "../../components/layout/PageContainer";
+// import incidentService from "../../services/incidentService";
+// import PageContainer from "../../components/layout/PageContainer";
 import LocationPicker from "../../components/maps/LocationPicker";
 
 const ReportIncident = () => {
@@ -142,7 +142,7 @@ const ReportIncident = () => {
   };
   
   return (
-    <PageContainer>
+    // <PageContainer>
       <div className="max-w-4xl mx-auto">
         <div className="bg-white shadow rounded-lg">
           <div className="p-6">
@@ -412,7 +412,7 @@ const ReportIncident = () => {
           </div>
         </div>
       </div>
-    </PageContainer>
+    // </PageContainer>
   );
 };
 

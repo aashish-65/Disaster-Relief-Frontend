@@ -19,12 +19,6 @@ import Footer from "./components/layout/Footer";
 
 // Placeholder components - these will be replaced with actual components later
 const HomePage = () => (
-  // <PageContainer>
-  //   <div className="container mx-auto py-8">
-  //     <h1 className="text-3xl font-bold mb-4">Home Page</h1>
-  //     <p>Welcome to the DisasterRelief crowdmapping platform.</p>
-  //   </div>
-  // </PageContainer>
   <Home />
 );
 const LoginPage = () => (
@@ -50,7 +44,7 @@ const ResourcesPage = () => (
 );
 const NotFoundPage = () => (
   <PageContainer>
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8 mt-16">
       <h1 className="text-3xl font-bold mb-4">404 - Page Not Found</h1>
       <p>The page you are looking for does not exist.</p>
     </div>
