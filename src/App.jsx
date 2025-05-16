@@ -6,32 +6,41 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { IncidentProvider } from "./context/IncidentContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PageContainer from "./components/layout/PageContainer";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Home from "./pages/Home";
+import UserDashboard from "./pages/dashboard/UserDashboard";
+import VolunteerDashboard from "./pages/dashboard/VolunteerDashboard";
+import NgoDashboard from "./pages/dashboard/NgoDashboard";
 import LocationPicker from "./components/maps/LocationPicker";
+import InteractiveMap from "./components/maps/InteractiveMap";
+import AddResource from "./pages/resources/AddResource";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 
 // Placeholder components - these will be replaced with actual components later
-const HomePage = () => (
-  <Home />
-);
-const LoginPage = () => (
-  <Login />
-);
-const RegisterPage = () => (
-  <Register />
-);
-const DashboardPage = () => (
-  <DashboardLayout>
-    <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-  </DashboardLayout>
-);
+const HomePage = () => <Home />;
+const LoginPage = () => <Login />;
+const RegisterPage = () => <Register />;
+
+const DashboardPage = () => {
+  const { currentUser } = useAuth();
+  return (
+    <DashboardLayout>
+      {currentUser?.role === "user" && <UserDashboard />}
+      {currentUser?.role === "volunteer" && <VolunteerDashboard />}
+      {currentUser?.role === "ngo" && <NgoDashboard />}
+      {currentUser?.role === "admin" && <AdminDashboard />}
+
+      {!currentUser && <p>Please log in to view your dashboard</p>}
+    </DashboardLayout>
+  );
+};
 const IncidentsPage = () => (
   <DashboardLayout>
     <h1 className="text-3xl font-bold mb-4">Incidents</h1>
@@ -85,9 +94,10 @@ const VolunteerResponsesPage = () => (
 
 // NGO dashboard pages
 const AddResourcePage = () => (
-  <DashboardLayout>
-    <h1 className="text-3xl font-bold mb-4">Add Resources</h1>
-  </DashboardLayout>
+  // <DashboardLayout>
+  //   <h1 className="text-3xl font-bold mb-4">Add Resources</h1>
+  // </DashboardLayout>
+  <AddResource />
 );
 const ManageRequestsPage = () => (
   <DashboardLayout>
@@ -121,6 +131,7 @@ function App() {
     <Router>
       <AuthProvider>
         {/* <PageContainer> */}
+        <IncidentProvider>
         <Navbar />
         <Routes>
           {/* Public routes */}
@@ -130,7 +141,8 @@ function App() {
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/incidents" element={<IncidentsPage />} />
-            <Route path="/resources" element={<ResourcesPage />} />
+          <Route path="/resources" element={<ResourcesPage />} />
+          <Route path="/resources/add" element={<AddResourcePage />} />
 
           {/* Protected routes - accessible by any authenticated user */}
           <Route element={<ProtectedRoute />}>
@@ -156,7 +168,7 @@ function App() {
 
           {/* NGO-specific routes */}
           <Route element={<ProtectedRoute allowedRoles={["ngo"]} />}>
-            <Route path="/resources/add" element={<AddResourcePage />} />
+            {/* <Route path="/resources/add" element={<AddResourcePage />} /> */}
             <Route
               path="/resources/requests"
               element={<ManageRequestsPage />}
@@ -176,6 +188,7 @@ function App() {
         </Routes>
         {/* </PageContainer> */}
         <Footer />
+        </IncidentProvider>
       </AuthProvider>
     </Router>
   );

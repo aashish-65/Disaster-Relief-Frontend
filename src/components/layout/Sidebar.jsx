@@ -59,8 +59,8 @@ const Sidebar = () => {
         collapsed ? 'w-16' : 'w-64'
       } min-h-screen transition-all duration-300 ease-in-out flex flex-col`}
     >
-      <div className="p-4 flex items-center justify-between">
-        {!collapsed && <h2 className="text-xl font-bold">DisasterRelief</h2>}
+      <div className="p-3 flex items-center justify-between">
+        {/* {!collapsed && <h2 className="text-xl font-bold">DisasterRelief</h2>} */}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="p-2 rounded-md hover:bg-gray-700"
@@ -77,7 +77,7 @@ const Sidebar = () => {
         </button>
       </div>
 
-      <div className="flex-1 py-4">
+      <div className="flex-1 py-2">
         <nav className="space-y-1">
           {navItems.map((item) => (
             <Link

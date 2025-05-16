@@ -6,7 +6,7 @@ const DashboardLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-100">
+    <div className="h-screen flex overflow-hidden bg-gray-100 mt-16">
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'block' : 'hidden'} md:block`}>
         <Sidebar />
@@ -15,7 +15,7 @@ const DashboardLayout = ({ children }) => {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top navigation */}
-        <div className="bg-white shadow-sm z-10">
+        {/* <div className="bg-white shadow-sm z-10">
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <button
@@ -42,9 +42,9 @@ const DashboardLayout = ({ children }) => {
               <div className="flex-1 flex justify-between px-4 md:px-0">
                 <div className="flex-1 flex">
                   <span className="md:hidden text-xl font-semibold text-primary-600">DisasterRelief</span>
-                </div>
+                </div> */}
                 {/* Profile dropdown - we'll use a simplified version here */}
-                <div className="ml-4 flex items-center md:ml-6">
+                {/* <div className="ml-4 flex items-center md:ml-6">
                   <div className="rounded-full bg-gray-200 p-1 text-gray-500">
                     <span className="sr-only">View notifications</span>
                     <svg
@@ -66,7 +66,7 @@ const DashboardLayout = ({ children }) => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Main content area */}
         <main className="flex-1 overflow-y-auto focus:outline-none">

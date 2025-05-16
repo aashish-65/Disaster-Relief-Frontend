@@ -8,6 +8,7 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    role: ""
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
